@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.6.0
+
+- Bump to Terraform v1.9.0 internally (fixes `curl` problem)
+- Removes the cleaning of plan's last lines
+
 ## v1.5.0
 
 - Bump to Terraform v1.0.6 internally (only affects `fmt`)
