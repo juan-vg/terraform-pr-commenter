@@ -185,7 +185,8 @@ if [[ $COMMAND == 'plan' ]]; then
   if [[ $EXIT_CODE -eq 0 || $EXIT_CODE -eq 2 ]]; then
     CLEAN_PLAN=$(echo "$INPUT" | sed -r '/^(An execution plan has been generated and is shown below.|Terraform used the selected providers to generate the following execution|No changes. Infrastructure is up-to-date.|No changes. Your infrastructure matches the configuration.|Note: Objects have changed outside of Terraform)$/,$!d') # Strip refresh section
     #CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r '/Plan: /q') # Ignore everything after plan summary ## https://github.com/robburger/terraform-pr-commenter/pull/49/files
-    CLEAN_PLAN=${CLEAN_PLAN::65300} # GitHub has a 65535-char comment limit - truncate plan, leaving space for comment wrapper
+    CHAR_LIMIT=65000 # leave space for comment wrapper (max 535 chars)
+    CLEAN_PLAN=${CLEAN_PLAN:${#CLEAN_PLAN}-CHAR_LIMIT:CHAR_LIMIT} # GitHub has a 65535-char comment limit - truncate plan to CHAR_LIMIT (from the beginning)
     CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r 's/^([[:blank:]]*)([-+~])/\2\1/g') # Move any diff characters to start of line
     if [[ $COLOURISE == 'true' ]]; then
       CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r 's/^~/!/g') # Replace ~ with ! to colourise the diff in GitHub comments
@@ -196,20 +197,29 @@ if [[ $COMMAND == 'plan' ]]; then
 \`\`\`diff
 $CLEAN_PLAN
 \`\`\`
-</details>"
+</details>
+
+Please visit [logs]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for a full, detailed plan output.
+"
   fi
 
   # Exit Code: 1
   # Meaning: Terraform plan failed.
   # Actions: Build PR comment.
   if [[ $EXIT_CODE -eq 1 ]]; then
+    CHAR_LIMIT=65000 # leave space for comment wrapper (max 535 chars)
+    CLEAN_INPUT=${INPUT:${#INPUT}-CHAR_LIMIT:CHAR_LIMIT} # GitHub has a 65535-char comment limit - truncate input to CHAR_LIMIT (from the beginning)
+
     PR_COMMENT="### Terraform \`plan\` Failed for Workspace: \`$WORKSPACE\`
 <details$DETAILS_STATE><summary>Show Output</summary>
 
 \`\`\`
-$INPUT
+$CLEAN_INPUT
 \`\`\`
-</details>"
+</details>
+
+Please visit [logs]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for a full, detailed plan output.
+"
   fi
 
   # Add plan comment to PR.

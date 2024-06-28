@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.6.1
+
+- Improve char-limit handling for plan comments
+  - Keep 65000 chars instead of 65300 to make enough room for comment wrapper
+  - Keep the last chars instead of the first ones when truncating (they're usually more useful)
+- Always add a link to full logs on plan comments
+
 ## v1.6.0
 
 - Bump to Terraform v1.9.0 internally (fixes `curl` problem)
