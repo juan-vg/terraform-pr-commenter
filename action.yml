@@ -3,13 +3,13 @@ description: 'Adds opinionated comments to a PR from Terraform fmt/init/plan out
 author: 'Juan-VG'
 branding:
   icon: 'git-pull-request'
-  color: 'purple'
+  color: 'green'
 inputs:
   commenter_type:
     description: 'The type of comment. Options: [fmt, init, plan]'
     required: true
-  commenter_input:
-    description: 'The comment to post from a previous step output'
+  commenter_input_file:
+    description: 'The file containing the comment to post from a previous step output'
     required: true
   commenter_exitcode:
     description: 'The exit code from a previous step output'
@@ -19,5 +19,5 @@ runs:
   image: 'Dockerfile'
   args:
     - ${{ inputs.commenter_type }}
-    - ${{ inputs.commenter_input }}
+    - ${{ inputs.commenter_input_file }}
     - ${{ inputs.commenter_exitcode }}

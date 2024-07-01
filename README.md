@@ -15,25 +15,28 @@ Support (for now) is [limited to Linux](https://help.github.com/en/actions/creat
 
 ## Usage
 
-This action can only be run after a Terraform `fmt`, `init`, `plan` or `validate` has completed, and the output has been captured. Terraform rarely writes to `stdout` and `stderr` in the same action, so we concatenate the `commenter_input`:
+This action can only be run after a Terraform `fmt`, `init`, `plan` or `validate` has completed, and the output has been captured into a file. Terraform rarely writes to `stdout` and `stderr` in the same action, so we concatenate them:
 
 ```yaml
+- name: Write TF output to file
+  run: echo "${{ format('{0}{1}', steps.step_id.outputs.stdout, steps.step_id.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
+
 - uses: juan-vg/terraform-pr-commenter@v1
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     commenter_type: fmt/init/plan/validate # Choose one
-    commenter_input: ${{ format('{0}{1}', steps.step_id.outputs.stdout, steps.step_id.outputs.stderr) }}
+    commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
     commenter_exitcode: ${{ steps.step_id.outputs.exitcode }}
 ```
 
 ### Inputs
 
-| Name                 | Requirement | Description                                                       |
-| -------------------- | ----------- | ----------------------------------------------------------------- |
-| `commenter_type`     | _required_  | The type of comment. Options: [`fmt`, `init`, `plan`, `validate`] |
-| `commenter_input`    | _required_  | The comment to post from a previous step output.                  |
-| `commenter_exitcode` | _required_  | The exit code from a previous step output.                        |
+| Name                   | Requirement | Description                                                       |
+| ---------------------- | ----------- | ----------------------------------------------------------------- |
+| `commenter_type`       | _required_  | The type of comment. Options: [`fmt`, `init`, `plan`, `validate`] |
+| `commenter_input_file` | _required_  | The file name containing the TF output from a previous step       |
+| `commenter_exitcode`   | _required_  | The exit code from a previous step output.                        |
 
 ### Environment Variables
 
@@ -64,7 +67,7 @@ jobs:
           EXPAND_SUMMARY_DETAILS: 'true' # Override global environment variable; expand details just for this step
         with:
           commenter_type: plan
-          commenter_input: ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
+          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
 ...
 ```
@@ -97,55 +100,67 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-          terraform_version: 0.15.0
+          terraform_version: 1.9.0
 
       - name: Terraform Format
         id: fmt
         run: terraform fmt -check -recursive
         continue-on-error: true
 
+      - name: Write TF output to file
+        run: echo "${{ format('{0}{1}', steps.fmt.outputs.stdout, steps.fmt.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
+
       - name: Post Format
         if: always() && github.ref != 'refs/heads/master' && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure')
         uses: juan-vg/terraform-pr-commenter@v1
         with:
           commenter_type: fmt
-          commenter_input: ${{ format('{0}{1}', steps.fmt.outputs.stdout, steps.fmt.outputs.stderr) }}
+          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
           commenter_exitcode: ${{ steps.fmt.outputs.exitcode }}
 
       - name: Terraform Init
         id: init
         run: terraform init
 
+      - name: Write TF output to file
+        run: echo "${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
+
       - name: Post Init
         if: always() && github.ref != 'refs/heads/master' && (steps.init.outcome == 'success' || steps.init.outcome == 'failure')
         uses: juan-vg/terraform-pr-commenter@v1
         with:
           commenter_type: init
-          commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
+          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
           commenter_exitcode: ${{ steps.init.outputs.exitcode }}
 
       - name: Terraform Validate
         id: validate
         run: terraform validate
 
+      - name: Write TF output to file
+        run: echo "${{ format('{0}{1}', steps.validate.outputs.stdout, steps.validate.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
+
       - name: Post Validate
         if: always() && github.ref != 'refs/heads/master' && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure')
         uses: juan-vg/terraform-pr-commenter@v1
         with:
           commenter_type: validate
-          commenter_input: ${{ format('{0}{1}', steps.validate.outputs.stdout, steps.validate.outputs.stderr) }}
+          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
           commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
 
       - name: Terraform Plan
         id: plan
         run: terraform plan -out workspace.plan
 
+      - name: Write TF output to file
+        run: echo "${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
+
       - name: Post Plan
         if: always() && github.ref != 'refs/heads/master' && (steps.plan.outcome == 'success' || steps.plan.outcome == 'failure')
         uses: juan-vg/terraform-pr-commenter@v1
         with:
           commenter_type: plan
-          commenter_input: ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
+          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
 
       - name: Terraform Apply
@@ -177,30 +192,36 @@ jobs:
         uses: hashicorp/setup-terraform@v1
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
-          terraform_version: 0.15.0
+          terraform_version: 1.9.0
 
       - name: Terraform Init - ${{ matrix['workspace'] }}
         id: init
         run: terraform init
+
+      - name: Write TF output to file
+        run: echo "${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
 
       - name: Post Init - ${{ matrix['workspace'] }}
         if: always() && github.ref != 'refs/heads/master' && (steps.init.outcome == 'success' || steps.init.outcome == 'failure')
         uses: juan-vg/terraform-pr-commenter@v1
           with:
             commenter_type: init
-            commenter_input: ${{ format('{0}{1}', steps.init.outputs.stdout, steps.init.outputs.stderr) }}
+            commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
             commenter_exitcode: ${{ steps.init.outputs.exitcode }}
 
       - name: Terraform Plan - ${{ matrix['workspace'] }}
         id: plan
         run: terraform plan -out ${{ matrix['workspace'] }}.plan
 
+      - name: Write TF output to file
+        run: echo "${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
+
       - name: Post Plan - ${{ matrix['workspace'] }}
         if: always() && github.ref != 'refs/heads/master' && (steps.plan.outcome == 'success' || steps.plan.outcome == 'failure')
         uses: juan-vg/terraform-pr-commenter@v1
         with:
           commenter_type: plan
-          commenter_input: ${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}
+          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
 ...
 ```
