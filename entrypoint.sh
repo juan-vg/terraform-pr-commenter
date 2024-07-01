@@ -19,7 +19,7 @@ if [[ ! "$1" =~ ^(fmt|init|plan|validate)$ ]]; then
   exit 1
 fi
 
-if [[ -f $2 ]]; then
+if [[ ! -f $2 ]]; then
   echo "The provided file does not exist."
   exit 1
 fi
