@@ -26,7 +26,7 @@ This action can only be run after a Terraform `fmt`, `init`, `plan` or `validate
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
     commenter_type: fmt/init/plan/validate # Choose one
-    commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
+    commenter_input_file: tf.out
     commenter_exitcode: ${{ steps.step_id.outputs.exitcode }}
 ```
 
@@ -67,7 +67,7 @@ jobs:
           EXPAND_SUMMARY_DETAILS: 'true' # Override global environment variable; expand details just for this step
         with:
           commenter_type: plan
-          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
+          commenter_input_file: tf.out
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
 ...
 ```
@@ -115,7 +115,7 @@ jobs:
         uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: fmt
-          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
+          commenter_input_file: tf.out
           commenter_exitcode: ${{ steps.fmt.outputs.exitcode }}
 
       - name: Terraform Init
@@ -130,7 +130,7 @@ jobs:
         uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: init
-          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
+          commenter_input_file: tf.out
           commenter_exitcode: ${{ steps.init.outputs.exitcode }}
 
       - name: Terraform Validate
@@ -145,7 +145,7 @@ jobs:
         uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: validate
-          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
+          commenter_input_file: tf.out
           commenter_exitcode: ${{ steps.validate.outputs.exitcode }}
 
       - name: Terraform Plan
@@ -160,7 +160,7 @@ jobs:
         uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: plan
-          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
+          commenter_input_file: tf.out
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
 
       - name: Terraform Apply
@@ -206,7 +206,7 @@ jobs:
         uses: juan-vg/terraform-pr-commenter@v2
           with:
             commenter_type: init
-            commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
+            commenter_input_file: tf.out
             commenter_exitcode: ${{ steps.init.outputs.exitcode }}
 
       - name: Terraform Plan - ${{ matrix['workspace'] }}
@@ -221,7 +221,7 @@ jobs:
         uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: plan
-          commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
+          commenter_input_file: tf.out
           commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
 ...
 ```
