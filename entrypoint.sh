@@ -36,7 +36,6 @@ fi
 COMMAND=$1
 # Arg 2 is input file. We strip ANSI colours.
 INPUT=$(cat "/github/workspace/$2" | sed 's/\x1b\[[0-9;]*m//g')
-echo -e "\033[34;1mDEBUG:\033[0m Input: $INPUT"
 # Arg 3 is the Terraform CLI exit code
 EXIT_CODE=$3
 
@@ -190,12 +189,16 @@ if [[ $COMMAND == 'plan' ]]; then
   # Actions: Strip out the refresh section, ignore everything after the 72 dashes, format, colourise and build PR comment.
   if [[ $EXIT_CODE -eq 0 || $EXIT_CODE -eq 2 ]]; then
     CLEAN_PLAN=$(echo "$INPUT" | sed -r '/^(An execution plan has been generated and is shown below.|Terraform used the selected providers to generate the following execution|No changes. Infrastructure is up-to-date.|No changes. Your infrastructure matches the configuration.|Note: Objects have changed outside of Terraform)$/,$!d') # Strip refresh section
+    echo -e "\033[34;1mINFO:\033[0m Plan output 1:\n$CLEAN_PLAN"
     #CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r '/Plan: /q') # Ignore everything after plan summary ## https://github.com/robburger/terraform-pr-commenter/pull/49/files
     CHAR_LIMIT=65000 # leave space for comment wrapper (max 535 chars)
     CLEAN_PLAN=${CLEAN_PLAN:${#CLEAN_PLAN}-CHAR_LIMIT:CHAR_LIMIT} # GitHub has a 65535-char comment limit - truncate plan to CHAR_LIMIT (from the beginning)
+    echo -e "\033[34;1mINFO:\033[0m Plan output 2:\n$CLEAN_PLAN"
     CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r 's/^([[:blank:]]*)([-+~])/\2\1/g') # Move any diff characters to start of line
+    echo -e "\033[34;1mINFO:\033[0m Plan output 3:\n$CLEAN_PLAN"
     if [[ $COLOURISE == 'true' ]]; then
       CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r 's/^~/!/g') # Replace ~ with ! to colourise the diff in GitHub comments
+      echo -e "\033[34;1mINFO:\033[0m Plan output 4:\n$CLEAN_PLAN"
     fi
     PR_COMMENT="### Terraform \`plan\` Succeeded for Workspace: \`$WORKSPACE\`
 <details$DETAILS_STATE><summary>Show Output</summary>
