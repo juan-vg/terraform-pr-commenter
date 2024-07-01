@@ -35,7 +35,8 @@ fi
 # Arg 1 is command
 COMMAND=$1
 # Arg 2 is input file. We strip ANSI colours.
-INPUT=$(cat "$2" | sed 's/\x1b\[[0-9;]*m//g')
+INPUT=$(cat "/github/workspace/$2" | sed 's/\x1b\[[0-9;]*m//g')
+echo -e "\033[34;1mDEBUG:\033[0m Input: $INPUT"
 # Arg 3 is the Terraform CLI exit code
 EXIT_CODE=$3
 
