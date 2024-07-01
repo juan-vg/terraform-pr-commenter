@@ -21,7 +21,7 @@ This action can only be run after a Terraform `fmt`, `init`, `plan` or `validate
 - name: Write TF output to file
   run: echo "${{ format('{0}{1}', steps.step_id.outputs.stdout, steps.step_id.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
 
-- uses: juan-vg/terraform-pr-commenter@v1
+- uses: juan-vg/terraform-pr-commenter@v2
   env:
     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   with:
@@ -61,7 +61,7 @@ jobs:
         uses: actions/checkout@v2
 ...
       - name: Post Plan
-        uses: juan-vg/terraform-pr-commenter@v1
+        uses: juan-vg/terraform-pr-commenter@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EXPAND_SUMMARY_DETAILS: 'true' # Override global environment variable; expand details just for this step
@@ -97,7 +97,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
+        uses: hashicorp/setup-terraform@v2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: 1.9.0
@@ -112,7 +112,7 @@ jobs:
 
       - name: Post Format
         if: always() && github.ref != 'refs/heads/master' && (steps.fmt.outcome == 'success' || steps.fmt.outcome == 'failure')
-        uses: juan-vg/terraform-pr-commenter@v1
+        uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: fmt
           commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
@@ -127,7 +127,7 @@ jobs:
 
       - name: Post Init
         if: always() && github.ref != 'refs/heads/master' && (steps.init.outcome == 'success' || steps.init.outcome == 'failure')
-        uses: juan-vg/terraform-pr-commenter@v1
+        uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: init
           commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
@@ -142,7 +142,7 @@ jobs:
 
       - name: Post Validate
         if: always() && github.ref != 'refs/heads/master' && (steps.validate.outcome == 'success' || steps.validate.outcome == 'failure')
-        uses: juan-vg/terraform-pr-commenter@v1
+        uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: validate
           commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
@@ -157,7 +157,7 @@ jobs:
 
       - name: Post Plan
         if: always() && github.ref != 'refs/heads/master' && (steps.plan.outcome == 'success' || steps.plan.outcome == 'failure')
-        uses: juan-vg/terraform-pr-commenter@v1
+        uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: plan
           commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
@@ -189,7 +189,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
+        uses: hashicorp/setup-terraform@v2
         with:
           cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
           terraform_version: 1.9.0
@@ -203,7 +203,7 @@ jobs:
 
       - name: Post Init - ${{ matrix['workspace'] }}
         if: always() && github.ref != 'refs/heads/master' && (steps.init.outcome == 'success' || steps.init.outcome == 'failure')
-        uses: juan-vg/terraform-pr-commenter@v1
+        uses: juan-vg/terraform-pr-commenter@v2
           with:
             commenter_type: init
             commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
@@ -218,7 +218,7 @@ jobs:
 
       - name: Post Plan - ${{ matrix['workspace'] }}
         if: always() && github.ref != 'refs/heads/master' && (steps.plan.outcome == 'success' || steps.plan.outcome == 'failure')
-        uses: juan-vg/terraform-pr-commenter@v1
+        uses: juan-vg/terraform-pr-commenter@v2
         with:
           commenter_type: plan
           commenter_input_file: ${GITHUB_WORKSPACE}/tf.out
