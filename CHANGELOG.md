@@ -1,5 +1,10 @@
 # Changelog
 
+## v2.0.0
+
+- Switch from raw Terraform output as input, to a file containing the output. This is meant to overcome the `Argument list too long` error
+  - The argument `commenter_input` no longer exists in favor of `commenter_input_file`
+
 ## v1.6.1
 
 - Improve char-limit handling for plan comments

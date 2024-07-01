@@ -14,13 +14,18 @@ if [[ -z "$GITHUB_TOKEN" ]]; then
 	exit 1
 fi
 
-if [[ -z $3 ]]; then
-    echo "There must be an exit code from a previous step."
-    exit 1
-fi
-
 if [[ ! "$1" =~ ^(fmt|init|plan|validate)$ ]]; then
   echo -e "Unsupported command \"$1\". Valid commands are \"fmt\", \"init\", \"plan\", \"validate\"."
+  exit 1
+fi
+
+if [[ -f $2 ]]; then
+  echo "The provided file does not exist."
+  exit 1
+fi
+
+if [[ -z $3 ]]; then
+  echo "There must be an exit code from a previous step."
   exit 1
 fi
 
@@ -29,8 +34,8 @@ fi
 ##################
 # Arg 1 is command
 COMMAND=$1
-# Arg 2 is input. We strip ANSI colours.
-INPUT=$(echo "$2" | sed 's/\x1b\[[0-9;]*m//g')
+# Arg 2 is input file. We strip ANSI colours.
+INPUT=$(cat "$2" | sed 's/\x1b\[[0-9;]*m//g')
 # Arg 3 is the Terraform CLI exit code
 EXIT_CODE=$3
 
