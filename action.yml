@@ -14,6 +14,12 @@ inputs:
   commenter_exitcode:
     description: 'The exit code from a previous step output'
     required: true
+  commenter_job_name:
+    description: '(Optional) The job name where Terraform is run in. Set this to make the logs link more accurate'
+    required: false
+  commenter_step_name:
+    description: '(Optional) The step name where Terraform is run in. Set this to make the logs link more accurate'
+    required: false
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -21,3 +27,5 @@ runs:
     - ${{ inputs.commenter_type }}
     - ${{ inputs.commenter_input_file }}
     - ${{ inputs.commenter_exitcode }}
+    - ${{ inputs.commenter_job_name }}
+    - ${{ inputs.commenter_step_name }}

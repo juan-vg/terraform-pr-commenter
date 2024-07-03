@@ -18,8 +18,20 @@ Support (for now) is [limited to Linux](https://help.github.com/en/actions/creat
 This action can only be run after a Terraform `fmt`, `init`, `plan` or `validate` has completed, and the output has been captured into a file. Terraform rarely writes to `stdout` and `stderr` in the same action, so we concatenate them:
 
 ```yaml
+jobs:
+  my_workflow:
+    name: 'My Workflow'
+    ...
+    permissions:
+      pull-requests: write # Required to post a comment
+      actions: read # Optional. Required to discover the Job ID required to generate the link (set only if commenter_job_name [and commenter_step_name] is set)
+...
+- name: Terraform Plan
+  id: plan
+  run: terraform plan
+
 - name: Write TF output to file
-  run: echo "${{ format('{0}{1}', steps.step_id.outputs.stdout, steps.step_id.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
+  run: echo "${{ format('{0}{1}', steps.plan.outputs.stdout, steps.plan.outputs.stderr) }}" > ${GITHUB_WORKSPACE}/tf.out
 
 - uses: juan-vg/terraform-pr-commenter@v2
   env:
@@ -27,16 +39,20 @@ This action can only be run after a Terraform `fmt`, `init`, `plan` or `validate
   with:
     commenter_type: fmt/init/plan/validate # Choose one
     commenter_input_file: tf.out
-    commenter_exitcode: ${{ steps.step_id.outputs.exitcode }}
+    commenter_exitcode: ${{ steps.plan.outputs.exitcode }}
+    commenter_job_name: 'My Workflow' # Optional
+    commenter_step_name: 'Terraform Plan' # Optional
 ```
 
 ### Inputs
 
-| Name                   | Requirement | Description                                                       |
-| ---------------------- | ----------- | ----------------------------------------------------------------- |
-| `commenter_type`       | _required_  | The type of comment. Options: [`fmt`, `init`, `plan`, `validate`] |
-| `commenter_input_file` | _required_  | The file name containing the TF output from a previous step       |
-| `commenter_exitcode`   | _required_  | The exit code from a previous step output.                        |
+| Name                   | Requirement | Description                                                                            |
+| ---------------------- | ----------- | -------------------------------------------------------------------------------------- |
+| `commenter_type`       | _required_  | The type of comment. Options: [`fmt`, `init`, `plan`, `validate`]                      |
+| `commenter_input_file` | _required_  | The file name containing the TF output from a previous step                            |
+| `commenter_exitcode`   | _required_  | The exit code from a previous step output.                                             |
+| `commenter_job_name`   | _optional_  | The job name where Terraform is run in. Set this to make the logs link more accurate.  |
+| `commenter_step_name`  | _optional_  | The step name where Terraform is run in. Set this to make the logs link more accurate. |
 
 ### Environment Variables
 

@@ -38,6 +38,14 @@ COMMAND=$1
 INPUT=$(cat "/github/workspace/$2" | sed 's/\x1b\[[0-9;]*m//g')
 # Arg 3 is the Terraform CLI exit code
 EXIT_CODE=$3
+# Arg 4 is the Job name
+JOB_NAME=$4
+# Arg 5 is the Step name
+STEP_NAME=$5
+
+# The char limit for comments is 65535. Leave space for comment wrapper (max 535 chars)
+COMMENT_CHAR_LIMIT=65000 
+
 
 # Read TF_WORKSPACE environment variable or use "default"
 WORKSPACE=${TF_WORKSPACE:-default}
@@ -58,6 +66,26 @@ CONTENT_HEADER="Content-Type: application/json"
 
 PR_COMMENTS_URL=$(jq -r ".pull_request.comments_url" "$GITHUB_EVENT_PATH")
 PR_COMMENT_URI=$(jq -r ".repository.issue_comment_url" "$GITHUB_EVENT_PATH" | sed "s|{/number}||g")
+
+# Generate Terraform run logs URL
+LOGS_URL=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+if [[ -n "$JOB_NAME" ]]; then
+  jobs_url="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs"
+  jobs_json=$(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -L $jobs_url)
+  job_json=$(echo "$jobs_json" | jq --arg job_name "$JOB_NAME" -r '.jobs[] | select(.name == $job_name and .status == "in_progress")')
+  job_id=$(echo "$job_json" | jq -r '.id')
+  if [[ -n "$job_id" ]]; then
+    LOGS_URL="$LOGS_URL/job/$job_id"
+  fi
+
+  if [[ -n "$STEP_NAME" ]]; then
+    step_id=$(echo "$job_json" | jq --arg step_name "$STEP_NAME" -r '.steps[] | select(.name == $step_name) | .number')
+    if [[ -n "$step_id" ]]; then
+      LOGS_URL="$LOGS_URL#step:$step_id:1"
+    fi
+  fi
+fi
+
 
 ##############
 # Handler: fmt
@@ -93,7 +121,10 @@ if [[ $COMMAND == 'fmt' ]]; then
 \`\`\`
 $INPUT
 \`\`\`
-</details>"
+</details>
+
+Please visit [logs]($LOGS_URL) for a full, detailed output.
+"
   fi
 
   # Exit Code: 3
@@ -113,7 +144,10 @@ $THIS_FILE_DIFF
     done
 
     PR_COMMENT="### Terraform \`fmt\` Failed
-$ALL_FILES_DIFF"
+$ALL_FILES_DIFF
+
+Please visit [logs]($LOGS_URL) for a full, detailed output.
+"
   fi
 
   # Add fmt failure comment to PR.
@@ -158,7 +192,10 @@ if [[ $COMMAND == 'init' ]]; then
 \`\`\`
 $INPUT
 \`\`\`
-</details>"
+</details>
+
+Please visit [logs]($LOGS_URL) for a full, detailed output.
+"
   fi
 
   # Add init failure comment to PR.
@@ -190,9 +227,8 @@ if [[ $COMMAND == 'plan' ]]; then
   if [[ $EXIT_CODE -eq 0 || $EXIT_CODE -eq 2 ]]; then
     CLEAN_PLAN=$(echo "$INPUT" | sed -r '/^(An execution plan has been generated and is shown below.|Terraform used the selected providers to generate the following execution|No changes. Infrastructure is up-to-date.|No changes. Your infrastructure matches the configuration.|Note: Objects have changed outside of Terraform)$/,$!d') # Strip refresh section
     
-    CHAR_LIMIT=65000 # leave space for comment wrapper (max 535 chars)
-    if [[ ${#CLEAN_PLAN} -gt $CHAR_LIMIT ]]; then
-      CLEAN_PLAN="...TRUNCATED...\n\n${CLEAN_PLAN:${#CLEAN_PLAN}-CHAR_LIMIT:CHAR_LIMIT}" # GitHub has a 65535-char comment limit - truncate plan to CHAR_LIMIT (from the beginning)
+    if [[ ${#CLEAN_PLAN} -gt $COMMENT_CHAR_LIMIT ]]; then
+      CLEAN_PLAN="...TRUNCATED...\n\n${CLEAN_PLAN:${#CLEAN_PLAN}-COMMENT_CHAR_LIMIT:COMMENT_CHAR_LIMIT}" # Truncate plan to COMMENT_CHAR_LIMIT (from the beginning)
     fi
 
     CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r 's/^([[:blank:]]*)([-+~])/\2\1/g') # Move any diff characters to start of line
@@ -200,7 +236,7 @@ if [[ $COMMAND == 'plan' ]]; then
     if [[ $COLOURISE == 'true' ]]; then
       CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r 's/^~/!/g') # Replace ~ with ! to colourise the diff in GitHub comments
     fi
-    PR_COMMENT="### Terraform \`plan\` Succeeded for Workspace: \`$WORKSPACE\`
+    PR_COMMENT="### Terraform \`plan\` ✅**SUCCEEDED**✅ for Workspace: \`$WORKSPACE\`
 <details$DETAILS_STATE><summary>Show Output</summary>
 
 \`\`\`diff
@@ -208,7 +244,7 @@ $CLEAN_PLAN
 \`\`\`
 </details>
 
-Please visit [logs]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for a full, detailed plan output.
+Please visit [logs]($LOGS_URL) for a full, detailed output.
 "
   fi
 
@@ -216,10 +252,11 @@ Please visit [logs]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_R
   # Meaning: Terraform plan failed.
   # Actions: Build PR comment.
   if [[ $EXIT_CODE -eq 1 ]]; then
-    CHAR_LIMIT=65000 # leave space for comment wrapper (max 535 chars)
-    CLEAN_INPUT=${INPUT:${#INPUT}-CHAR_LIMIT:CHAR_LIMIT} # GitHub has a 65535-char comment limit - truncate input to CHAR_LIMIT (from the beginning)
+    if [[ ${#INPUT} -gt $COMMENT_CHAR_LIMIT ]]; then
+      CLEAN_INPUT="...TRUNCATED...\n\n${INPUT:${#INPUT}-COMMENT_CHAR_LIMIT:COMMENT_CHAR_LIMIT}" # Truncate input to COMMENT_CHAR_LIMIT (from the beginning)
+    fi
 
-    PR_COMMENT="### Terraform \`plan\` Failed for Workspace: \`$WORKSPACE\`
+    PR_COMMENT="### Terraform \`plan\` ❌**FAILED**❌ for Workspace: \`$WORKSPACE\`
 <details$DETAILS_STATE><summary>Show Output</summary>
 
 \`\`\`
@@ -227,7 +264,7 @@ $CLEAN_INPUT
 \`\`\`
 </details>
 
-Please visit [logs]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for a full, detailed plan output.
+Please visit [logs]($LOGS_URL) for a full, detailed output.
 "
   fi
 
@@ -273,7 +310,10 @@ if [[ $COMMAND == 'validate' ]]; then
 \`\`\`
 $INPUT
 \`\`\`
-</details>"
+</details>
+
+Please visit [logs]($LOGS_URL) for a full, detailed output.
+"
   fi
 
   # Add validate failure comment to PR.
