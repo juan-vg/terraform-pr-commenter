@@ -72,7 +72,7 @@ if [[ -n "$JOB_NAME" ]]; then
   job_json=$(echo "$jobs_json" | jq --arg job_name "$JOB_NAME" -r '.jobs[] | select(.name == $job_name and .status == "in_progress")')
   job_id=$(echo "$job_json" | jq -r '.id')
   if [[ -n "$job_id" ]]; then
-    LOGS_URL="$LOGS_URL/jobs/$job_id"
+    LOGS_URL="$LOGS_URL/job/$job_id"
   fi
 
   if [[ -n "$STEP_NAME" ]]; then
