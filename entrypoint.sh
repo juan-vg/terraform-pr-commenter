@@ -140,10 +140,7 @@ Please visit [logs]($LOGS_URL) for a full, detailed output.
 \`\`\`diff
 $THIS_FILE_DIFF
 \`\`\`
-</details>
-
-Please visit [logs]($LOGS_URL) for a full, detailed output.
-"
+</details>"
     done
 
     PR_COMMENT="### Terraform \`fmt\` Failed
