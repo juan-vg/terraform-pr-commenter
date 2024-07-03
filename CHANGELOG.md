@@ -1,5 +1,13 @@
 # Changelog
 
+## v2.1.0
+
+- Link to logs added to all types
+- Add the option to make the logs link more accurate
+  - New optional input argument `commenter_job_name` to specify the job name for the logs link
+  - New optional input argument `commenter_step_name` to specify the step name for the logs link
+- Standardize the chars limit handling 
+
 ## v2.0.0
 
 - Switch from raw Terraform output as input, to a file containing the output. This is meant to overcome the `Argument list too long` error
