@@ -38,6 +38,11 @@ COMMAND=$1
 INPUT=$(cat "/github/workspace/$2" | sed 's/\x1b\[[0-9;]*m//g')
 # Arg 3 is the Terraform CLI exit code
 EXIT_CODE=$3
+# Arg 4 is the Job name
+JOB_NAME=$4
+# Arg 5 is the Step name
+STEP_NAME=$5
+
 
 # Read TF_WORKSPACE environment variable or use "default"
 WORKSPACE=${TF_WORKSPACE:-default}
@@ -58,6 +63,26 @@ CONTENT_HEADER="Content-Type: application/json"
 
 PR_COMMENTS_URL=$(jq -r ".pull_request.comments_url" "$GITHUB_EVENT_PATH")
 PR_COMMENT_URI=$(jq -r ".repository.issue_comment_url" "$GITHUB_EVENT_PATH" | sed "s|{/number}||g")
+
+# Generate Terraform run logs URL
+LOGS_URL=$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+if [[ -n "$JOB_NAME" ]]; then
+  jobs_url="https://api.github.com/repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs"
+  jobs_json=$(curl -sS -H "$AUTH_HEADER" -H "$ACCEPT_HEADER" -H "$CONTENT_HEADER" -L $jobs_url)
+  job_json=$(echo "$jobs_json" | jq --arg job_name "$JOB_NAME" -r '.jobs[] | select(.name == $job_name and .status == "in_progress")')
+  job_id=$(echo "$job_json" | jq -r '.id')
+  if [[ -n "$job_id" ]]; then
+    LOGS_URL="$LOGS_URL/jobs/$job_id"
+  fi
+
+  if [[ -n "$STEP_NAME" ]]; then
+    step_id=$(echo "$job_json" | jq --arg step_name "$STEP_NAME" -r '.steps[] | select(.name == $step_name) | .number')
+    if [[ -n "$step_id" ]]; then
+      LOGS_URL="$LOGS_URL#step:$step_id:1"
+    fi
+  fi
+fi
+
 
 ##############
 # Handler: fmt
@@ -208,7 +233,7 @@ $CLEAN_PLAN
 \`\`\`
 </details>
 
-Please visit [logs]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID) for a full, detailed plan output.
+Please visit [logs]($LOGS_URL) for a full, detailed plan output.
 "
   fi
 
