@@ -1,4 +1,4 @@
-# Terraform PR Commenter
+# Terraform PR Commenter by Juan-VG
 
 Adds opinionated comments to PR's based on Terraform `fmt`, `init`, `plan` and `validate` outputs.
 
@@ -12,6 +12,17 @@ This Docker-based GitHub Action is designed to work in tandem with [hashicorp/se
 > The `terraform_wrapper` needs to be set to `true` (which is already the default) for the `hashicorp/setup-terraform` step as it enables the capturing of `stdout`, `stderr` and the `exitcode`.
 
 Support (for now) is [limited to Linux](https://help.github.com/en/actions/creating-actions/about-actions#types-of-actions) as Docker-based GitHub Actions can only be used on Linux runners.
+
+## Why this fork?
+
+The original project was not being maintained, and I wanted to add some features and improvements to it. I also wanted to make it easier to use and more flexible.
+
+The main differences between this fork and the original project are:
+- Terraform has been upgraded to v1.9.0, solving the `curl` problem.
+- The output from Terraform is now written to a file, instead of being passed as an argument. This is to overcome the `Argument list too long` error.
+- The output is now truncated in a more consistent way.
+- The logs link is now added to all types of comments.
+- The logs link can be more accurate by setting the `commenter_job_name` and `commenter_step_name` inputs.
 
 ## Usage
 

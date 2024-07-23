@@ -44,7 +44,7 @@ JOB_NAME=$4
 STEP_NAME=$5
 
 # The char limit for comments is 65535. Leave space for comment wrapper (max 535 chars)
-COMMENT_CHAR_LIMIT=65000 
+COMMENT_CHAR_LIMIT=65000
 
 
 # Read TF_WORKSPACE environment variable or use "default"
@@ -226,9 +226,10 @@ if [[ $COMMAND == 'plan' ]]; then
   # Actions: Strip out the refresh section, ignore everything after the 72 dashes, format, colourise and build PR comment.
   if [[ $EXIT_CODE -eq 0 || $EXIT_CODE -eq 2 ]]; then
     CLEAN_PLAN=$(echo "$INPUT" | sed -r '/^(An execution plan has been generated and is shown below.|Terraform used the selected providers to generate the following execution|No changes. Infrastructure is up-to-date.|No changes. Your infrastructure matches the configuration.|Note: Objects have changed outside of Terraform)$/,$!d') # Strip refresh section
-    
+
     if [[ ${#CLEAN_PLAN} -gt $COMMENT_CHAR_LIMIT ]]; then
-      CLEAN_PLAN="...TRUNCATED...\n\n${CLEAN_PLAN:${#CLEAN_PLAN}-COMMENT_CHAR_LIMIT:COMMENT_CHAR_LIMIT}" # Truncate plan to COMMENT_CHAR_LIMIT (from the beginning)
+      CLEAN_PLAN="...TRUNCATED...
+${CLEAN_PLAN:${#CLEAN_PLAN}-COMMENT_CHAR_LIMIT:COMMENT_CHAR_LIMIT}" # Truncate plan to COMMENT_CHAR_LIMIT (from the beginning)
     fi
 
     CLEAN_PLAN=$(echo "$CLEAN_PLAN" | sed -r 's/^([[:blank:]]*)([-+~])/\2\1/g') # Move any diff characters to start of line
@@ -252,15 +253,17 @@ Please visit [logs]($LOGS_URL) for a full, detailed output.
   # Meaning: Terraform plan failed.
   # Actions: Build PR comment.
   if [[ $EXIT_CODE -eq 1 ]]; then
-    if [[ ${#INPUT} -gt $COMMENT_CHAR_LIMIT ]]; then
-      CLEAN_INPUT="...TRUNCATED...\n\n${INPUT:${#INPUT}-COMMENT_CHAR_LIMIT:COMMENT_CHAR_LIMIT}" # Truncate input to COMMENT_CHAR_LIMIT (from the beginning)
+    ERROR_MSG=$(echo "$INPUT")
+    if [[ ${#ERROR_MSG} -gt $COMMENT_CHAR_LIMIT ]]; then
+      ERROR_MSG="...TRUNCATED...
+${ERROR_MSG:${#ERROR_MSG}-COMMENT_CHAR_LIMIT:COMMENT_CHAR_LIMIT}" # Truncate ERROR_MSG to COMMENT_CHAR_LIMIT (from the beginning)
     fi
 
     PR_COMMENT="### Terraform \`plan\` ❌**FAILED**❌ for Workspace: \`$WORKSPACE\`
 <details$DETAILS_STATE><summary>Show Output</summary>
 
 \`\`\`
-$CLEAN_INPUT
+$ERROR_MSG
 \`\`\`
 </details>
 
